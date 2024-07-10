@@ -1,0 +1,96 @@
+<html>
+  <head>
+    <script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+    <script src="https://cdn.anychart.com/releases/v8/js/anychart-ui.min.js"></script>
+    <script src="https://csdn.anychart.com/releases/v8/js/anychart-exports.min.js"></script>
+    <link href="https://cdn.anychart.com/releases/v8/css/anychart-ui.min.css" type="text/css" rel="stylesheet" />
+    <script src="/tableau.extensions.1.latest.min.js"></script>
+    <!-- import mysql -->
+
+    <link
+      href="https://cdn.anychart.com/releases/v8/fonts/css/anychart-font.min.css"
+      type="text/css"
+      rel="stylesheet"
+    />
+    <style type="text/css">
+      html,
+      body,
+      #container {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container"><span> Helsssslo</span></div>
+
+    <script>
+      anychart.onDocumentReady(function () {
+        //get response from an api
+
+        const fetchApi = async () => {
+          try {
+            const response = await fetch("#your api here", { mode: "cors" });
+            const data = await response.json();
+            console.log("Hello from data", data);
+            return data;
+          } catch (error) {
+            console.error("Error fetching data:", error);
+            return null;
+          }
+        };
+        console.log("Hello from fetchApi", fetchApi());
+        //if parameter changed then get the parameter value
+
+        window.tableau.extensions.initializeAsync({ configure: null }).then(function () {
+          console.log("Hello");
+          const workSheet = tableau.extensions.dashboardContent.dashboard.worksheets[0];
+          const dashboard = tableau.extensions.dashboardContent.dashboard;
+          setInterval(() => {
+            fetchApi().then((data) => {
+              if (data.reload) {
+                console.log("Hello");
+                const workSheet = tableau.extensions.dashboardContent.dashboard.worksheets[0];
+                workSheet.getDataSourcesAsync().then((datasources) => {
+                  console.log(datasources);
+                  //refresh the data source
+                  datasources[0].refreshAsync().then(() => {
+                    console.log("Data source refreshed");
+                  });
+                });
+              }
+            });
+          }, 1000);
+
+          //add an event listner for parameter change
+          console.log("Hello from workSheet", tableau.TableauEventType);
+          dashboard.getParametersAsync().then((parameters) => {
+            console.log("Hello from parameters", parameters);
+            parameters[0].addEventListener(tableau.TableauEventType.ParameterChanged, (event) => {
+              //get the parameter value
+              const parameterValue = workSheet.getParametersAsync().then((parameters) => {
+                //get the value of parameter with parameter name ParameterChanged
+                const parameterValue = parameters.find((parameter) => parameter.name === "getDataParam").currentValue
+                  .value;
+
+                const response = fetch(`http://127.0.0.1:3308/api/set-return-num/${parameterValue}`, { mode: "cors" });
+                console.log("Hello from parameterValue", parameterValue);
+              });
+            });
+          });
+
+          workSheet.getDataSourcesAsync().then((datasources) => {
+            console.log(datasources);
+            //refresh the data source
+            datasources[0].refreshAsync().then(() => {
+              console.log("Data source refreshed");
+            });
+          });
+        });
+        // create pie chart with passed data
+      });
+    </script>
+  </body>
+</html>
